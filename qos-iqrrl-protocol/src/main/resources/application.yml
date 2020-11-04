@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: qos-iqrrl
+server:
+  port: 8081
+
+swagger:
+  enabled: true

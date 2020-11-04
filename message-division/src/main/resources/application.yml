@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: message-division
+server:
+  port: 8080
+
+swagger:
+  enabled: true
