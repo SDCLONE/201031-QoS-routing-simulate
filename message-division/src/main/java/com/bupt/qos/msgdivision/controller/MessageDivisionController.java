@@ -30,6 +30,11 @@ public class MessageDivisionController {
         messageDivisionService.mkdirTestLinux();
     }
 
+    @GetMapping("/analyzeMsgDiv")
+    public void analyzeMsgDiv() {
+        messageDivisionService.analyzeMsgDiv();
+    }
+
     //生成trace文件
     @GetMapping("/generateMsgDivTraceFile")
     public void generateMsgDivTraceFile() {
@@ -40,5 +45,11 @@ public class MessageDivisionController {
     @GetMapping("/generateMsgDivAwkFiles")
     public void generateMsgDivAwkFiles() {
         messageDivisionService.generateMsgDivAwkFiles();
+    }
+
+    //生成awk分析文件
+    @GetMapping("/clearGeneratedFiles")
+    public void clearGeneratedFiles() {
+        messageDivisionService.clearGeneratedFiles();
     }
 }

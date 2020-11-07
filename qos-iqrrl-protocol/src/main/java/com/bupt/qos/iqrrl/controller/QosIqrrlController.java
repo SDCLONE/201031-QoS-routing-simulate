@@ -24,7 +24,6 @@ public class QosIqrrlController {
         qosIqrrlService.analyzeIqrrlTrace();
     }
 
-
     @GetMapping("/generateIqrrlTraceFile")
     public void generateIqrrlTraceFile() {
         qosIqrrlService.generateIqrrlTraceFile();
@@ -35,4 +34,8 @@ public class QosIqrrlController {
         qosIqrrlService.generateIqrrlAwkFiles();
     }
 
+    @GetMapping("/clearGeneratedFiles")
+    public void clearGeneratedFiles() {
+        qosIqrrlService.clearGeneratedFiles();
+    }
 }

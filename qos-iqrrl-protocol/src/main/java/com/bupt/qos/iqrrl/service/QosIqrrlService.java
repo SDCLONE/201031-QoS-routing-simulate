@@ -39,10 +39,7 @@ public class QosIqrrlService {
     private final String IQRRL_THROUGHPUT_PATH = AWK_DIRECTORY_PATH + IQRRL_THROUGHPUT_FILENAME;
 
 
-//    private final String IQRRL_DELAY_AWK_PATH = "/home/baobao/Desktop/2020.09.09-differation-service-data-analysis/iqrrl-delay.awk";
-//    private final String IQRRL_THROUGHPUT_AWK_PATH = "/home/baobao/Desktop/2020.09.09-differation-service-data-analysis/iqrrl-throughput.awk";
-//    private final String IQRRL_DELAY_PATH = "/home/baobao/Desktop/2020.09.09-differation-service-data-analysis/iqrrl-delay";
-//    private final String IQRRL_THROUGHPUT_PATH = "/home/baobao/Desktop/2020.09.09-differation-service-data-analysis/iqrrl-throughput";
+
 
     public void analyzeIqrrlTrace() {
         //首先生成iqrrltrace.tr文件
@@ -124,5 +121,31 @@ public class QosIqrrlService {
             log.info(">>>>>>>>>>iqrrltrace已经存在，无需生成<<<<<<<<<<");
         }
 
+    }
+
+    public void clearGeneratedFiles() {
+        String shellCommand =
+                "rm -f " + IQRRLTRACE_PATH +
+                        " && rm -f " + IQRRL_DELAY_PATH +
+                        " && rm -f " + IQRRL_THROUGHPUT_PATH;
+//        System.out.println(shellCommand);
+        //调用命令行清除所有生成文件
+        try {
+            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
+            Process pr = Runtime.getRuntime().exec(arg1);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
+            String line;
+            //读取python中print的值
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+            int r2 = pr.waitFor();
+            System.out.println("ending" + r2);
+            log.info("清除生成文件完毕");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

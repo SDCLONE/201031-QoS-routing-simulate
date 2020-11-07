@@ -106,14 +106,14 @@ public class MessageDivisionService {
     }
 
     public void generateMsgDivAwkFiles() {
-        File iqrrlDelayFile = new File(VANET_ROUTING_COMPARE_DELAY_PATH);
-        File iqrrlThroughputFile = new File(VANET_ROUTING_COMPARE_THROUGHPUT_PATH);
+        File vanetRoutingCompareDelayFile = new File(VANET_ROUTING_COMPARE_DELAY_PATH);
+        File vanetRoutingCompareThroughputFile = new File(VANET_ROUTING_COMPARE_THROUGHPUT_PATH);
         List<String[]> awkPathList = new ArrayList<>();
         //不存在就加入list
-        if (!iqrrlDelayFile.exists()) {
+        if (!vanetRoutingCompareDelayFile.exists()) {
             awkPathList.add(new String[]{VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME, VANET_ROUTING_COMPARE_DELAY_FILENAME});
         }
-        if (!iqrrlThroughputFile.exists()) {
+        if (!vanetRoutingCompareThroughputFile.exists()) {
             awkPathList.add(new String[]{VANET_ROUTING_COMPARE_THROUGHPUT_AWK_FILENAME, VANET_ROUTING_COMPARE_THROUGHPUT_FILENAME});
         }
         //根据list生成linux指令
@@ -146,6 +146,32 @@ public class MessageDivisionService {
             int r2 = pr.waitFor();
             System.out.println("ending" + r2);
             log.info("生成awk分析文件完毕");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void clearGeneratedFiles() {
+        String shellCommand =
+                "rm -f " + VANET_ROUTING_COMPARE_TRACE_PATH +
+                " && rm -f " + VANET_ROUTING_COMPARE_DELAY_PATH +
+                " && rm -f " + VANET_ROUTING_COMPARE_THROUGHPUT_PATH;
+//        System.out.println(shellCommand);
+        //调用命令行清除所有生成文件
+        try {
+            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
+            Process pr = Runtime.getRuntime().exec(arg1);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
+            String line;
+            //读取python中print的值
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+            int r2 = pr.waitFor();
+            System.out.println("ending" + r2);
+            log.info("清除生成文件完毕");
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
