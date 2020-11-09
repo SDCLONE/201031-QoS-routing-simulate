@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/msgDiv")
 public class MessageDivisionController {
@@ -13,7 +15,7 @@ public class MessageDivisionController {
     @Autowired
     private MessageDivisionService messageDivisionService;
 
-    @RequestMapping("/helloTest")
+    @GetMapping("/helloTest")
     public String helloTest() {
         return "hello test";
     }
@@ -31,8 +33,8 @@ public class MessageDivisionController {
     }
 
     @GetMapping("/analyzeMsgDiv")
-    public void analyzeMsgDiv() {
-        messageDivisionService.analyzeMsgDiv();
+    public Map<String, Object> analyzeMsgDiv() {
+        return messageDivisionService.analyzeMsgDiv();
     }
 
     //生成trace文件

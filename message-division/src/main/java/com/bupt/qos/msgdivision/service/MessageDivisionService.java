@@ -3,12 +3,11 @@ package com.bupt.qos.msgdivision.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -72,10 +71,122 @@ public class MessageDivisionService {
         }
     }
 
-    public void analyzeMsgDiv() {
+    public Map<String, Object> analyzeMsgDiv() {
         generateMsgDivTraceFile();
         generateMsgDivAwkFiles();
         log.info("-----------------开始分析vanet-routing-compare-----------------------");
+
+//        String filePath = "D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision\\vanet-routing-compare-delay";
+//        String filePath2 = "D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision\\vanet-routing-compare-throughput";
+        Map<String, Object> allMap = new HashMap<>();
+        Map<String, Object> delayMap = new HashMap<>();
+        Map<String, Object> throughputMap = new HashMap<>();
+
+        //分析时延
+        double averageDelay = 0;
+        int lowDelayCount = 0;      // <=0.001
+        int middleDelayCount = 0;   // <=3   >0.001
+        int highDelayCount = 0;     // >3
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(VANET_ROUTING_COMPARE_DELAY_PATH));
+//            BufferedReader br = new BufferedReader(new FileReader(filePath));
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                String[] lineArr = line.split(" ");
+                if (lineArr.length > 1) {   //不是最后一行
+//                    System.out.println(lineArr[4]);
+                    //todo 是否要进行统计
+                    double delay = Double.parseDouble(lineArr[4]);
+                    if (delay <= 0.001) {
+                        lowDelayCount++;
+                    } else if (delay > 0.001 && delay <=3) {
+                        middleDelayCount++;
+                    } else {
+                        highDelayCount++;
+                    }
+                } else {    //是最后一行
+//                    System.out.println("avg: " + lineArr[0]);
+                    averageDelay = Double.parseDouble(lineArr[0]);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //分析吞吐率
+        double averageThroughput = 0;
+        int lowThroughputCount = 0;  // <=5
+        int highThroughputCount = 0;   // > 5
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(VANET_ROUTING_COMPARE_THROUGHPUT_PATH));
+//            BufferedReader br = new BufferedReader(new FileReader(filePath2));
+            String line = "";
+            while ((line = br.readLine()) != null) {
+                String[] lineArr = line.split(" ");
+                if (lineArr.length > 1) {   //不是最后一行
+//                    System.out.println(lineArr[1]);
+                    //todo 是否要进行统计
+                    double throughput = Double.parseDouble(lineArr[1]);
+                    if (throughput <= 5) {
+                        lowThroughputCount++;
+                    } else {
+                        highThroughputCount++;
+                    }
+                } else {    //是最后一行
+//                    System.out.println("avg: " + lineArr[0]);
+                    averageThroughput = Double.parseDouble(lineArr[0]);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //将delay信息加入map
+        delayMap.put("averageDelay", averageDelay);
+        delayMap.put("lowDelayCount", lowDelayCount);
+        delayMap.put("middleDelayCount", middleDelayCount);
+        delayMap.put("highDelayCount", highDelayCount);
+        delayMap.put("allDelayCount", lowDelayCount + middleDelayCount + highDelayCount);
+
+        //将throughput加入map
+        throughputMap.put("averageThroughput", averageThroughput);
+        throughputMap.put("lowThroughputCount", lowThroughputCount);
+        throughputMap.put("highThroughputCount", highThroughputCount);
+        throughputMap.put("allThroughputCount", lowThroughputCount + highThroughputCount);
+
+        //将整个map打包
+        allMap.put("msgDivDelay", delayMap);
+        allMap.put("msgDivThroughput", throughputMap);
+
+        return allMap;
+
+
+    }
+
+    public void clearGeneratedFiles() {
+        String shellCommand =
+                "rm -f " + VANET_ROUTING_COMPARE_TRACE_PATH +
+                        " && rm -f " + VANET_ROUTING_COMPARE_DELAY_PATH +
+                        " && rm -f " + VANET_ROUTING_COMPARE_THROUGHPUT_PATH;
+//        System.out.println(shellCommand);
+        //调用命令行清除所有生成文件
+        try {
+            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
+            Process pr = Runtime.getRuntime().exec(arg1);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
+            String line;
+            //读取python中print的值
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+            int r2 = pr.waitFor();
+            System.out.println("ending" + r2);
+            log.info("清除生成文件完毕");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void generateMsgDivTraceFile() {
@@ -151,29 +262,4 @@ public class MessageDivisionService {
         }
     }
 
-    public void clearGeneratedFiles() {
-        String shellCommand =
-                "rm -f " + VANET_ROUTING_COMPARE_TRACE_PATH +
-                " && rm -f " + VANET_ROUTING_COMPARE_DELAY_PATH +
-                " && rm -f " + VANET_ROUTING_COMPARE_THROUGHPUT_PATH;
-//        System.out.println(shellCommand);
-        //调用命令行清除所有生成文件
-        try {
-            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
-            Process pr = Runtime.getRuntime().exec(arg1);
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
-            String line;
-            //读取python中print的值
-            while ((line = in.readLine()) != null) {
-                System.out.println(line);
-            }
-            in.close();
-            int r2 = pr.waitFor();
-            System.out.println("ending" + r2);
-            log.info("清除生成文件完毕");
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 }
