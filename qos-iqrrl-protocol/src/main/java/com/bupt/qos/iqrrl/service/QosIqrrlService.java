@@ -28,10 +28,10 @@ public class QosIqrrlService {
 
     //todo 需要和学姐调试好怎么生成ns2  iqrrl的awk分析文件
     private final String AWK_DIRECTORY_PATH = "/home/baobao/Desktop/2020.09.09-differation-service-data-analysis/";
-    private final String IQRRL_DELAY_AWK_FILENAME = "iqrrl-delay.awk";
-    private final String IQRRL_THROUGHPUT_AWK_FILENAME = "iqrrl-throughput.awk";
-    private final String IQRRL_DELAY_FILENAME = "iqrrl-delay";
-    private final String IQRRL_THROUGHPUT_FILENAME = "iqrrl-throughput";
+    private final String IQRRL_DELAY_AWK_FILENAME = "iqrrltrace-delay.awk";
+    private final String IQRRL_THROUGHPUT_AWK_FILENAME = "iqrrltrace-throughput.awk";
+    private final String IQRRL_DELAY_FILENAME = "iqrrltrace-delay";
+    private final String IQRRL_THROUGHPUT_FILENAME = "iqrrltrace-throughput";
 
     private final String IQRRL_DELAY_AWK_PATH = AWK_DIRECTORY_PATH + IQRRL_DELAY_AWK_FILENAME;
     private final String IQRRL_THROUGHPUT_AWK_PATH = AWK_DIRECTORY_PATH + IQRRL_THROUGHPUT_AWK_FILENAME;
