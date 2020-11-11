@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/iqrrl")
 public class QosIqrrlController {
@@ -20,8 +22,8 @@ public class QosIqrrlController {
     }
 
     @GetMapping("/analyzeIqrrlTrace")
-    public void analyzeIqrrlTrace() {
-        qosIqrrlService.analyzeIqrrlTrace();
+    public Map<String, Object> analyzeIqrrlTrace() {
+         return qosIqrrlService.analyzeIqrrlTrace();
     }
 
     @GetMapping("/generateIqrrlTraceFile")

@@ -99,7 +99,7 @@ public class MessageDivisionService {
                     double delay = Double.parseDouble(lineArr[4]);
                     if (delay <= 0.001) {
                         lowDelayCount++;
-                    } else if (delay > 0.001 && delay <=3) {
+                    } else if (delay > 0.001 && delay <= 3) {
                         middleDelayCount++;
                     } else {
                         highDelayCount++;
