@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -114,29 +115,34 @@ public class MessageDivisionService {
         }
 
         //分析吞吐率
-        double averageThroughput = 0;
-        int lowThroughputCount = 0;  // <=5
-        int highThroughputCount = 0;   // > 5
+        DecimalFormat dfl = new DecimalFormat("0.000"); //保留三位小数用
 
+        //统计总的吞吐率
+        double totalThroughputRate = 0;
+        double totalSimulationTime = 0;
+        //统计间隔的吞吐率
+        double intervalTimeOffset = 0.25;
+        double intervalTime = 0.5;
+        List<Double> intervalThroughputRates = new ArrayList<>();   //画图的纵坐标
+        List<Double> intervalThroughputRatesKB = new ArrayList<>();   //KB格式
+        List<Double> intervalXAxis = new ArrayList<>();    //画图的横坐标
         try {
             BufferedReader br = new BufferedReader(new FileReader(VANET_ROUTING_COMPARE_THROUGHPUT_PATH));
-//            BufferedReader br = new BufferedReader(new FileReader(filePath2));
-            String line = "";
+            String line;
             while ((line = br.readLine()) != null) {
                 String[] lineArr = line.split(" ");
-                if (lineArr.length > 1) {   //不是最后一行
-//                    System.out.println(lineArr[1]);
-                    //todo 是否要进行统计
-                    double throughput = Double.parseDouble(lineArr[1]);
-                    if (throughput <= 5) {
-                        lowThroughputCount++;
-                    } else {
-                        highThroughputCount++;
-                    }
-                } else {    //是最后一行
-//                    System.out.println("avg: " + lineArr[0]);
-                    averageThroughput = Double.parseDouble(lineArr[0]);
+                if (lineArr.length == 3) {
+                    double oneRate = Double.parseDouble(lineArr[2]);
+                    intervalThroughputRates.add(oneRate);   //将一个间隔的吞吐率(B/s)加入intervalThroughputRates
+                    intervalThroughputRatesKB.add(oneRate / 1024);  //将一个间隔的吞吐率(KB/s)加入intervalThroughputRatesKB
+                    intervalXAxis.add(intervalTimeOffset);  //将当前间隔的时间坐标加入intervalXAxis
+                    intervalTimeOffset += intervalTime;
+
+                } else if(lineArr.length == 2){
+                    totalThroughputRate = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[0])));
+                    totalSimulationTime = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[1])));
                 }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,10 +155,11 @@ public class MessageDivisionService {
         delayMap.put("allDelayCount", lowDelayCount + middleDelayCount + highDelayCount);
 
         //将throughput加入map
-        throughputMap.put("averageThroughput", averageThroughput);
-        throughputMap.put("lowThroughputCount", lowThroughputCount);
-        throughputMap.put("highThroughputCount", highThroughputCount);
-        throughputMap.put("allThroughputCount", lowThroughputCount + highThroughputCount);
+        throughputMap.put("averageThroughputRate", totalThroughputRate);
+        throughputMap.put("totalSimulationTime", totalSimulationTime);
+        throughputMap.put("intervalThroughputRatesArr", intervalThroughputRates.toArray());
+        throughputMap.put("intervalThroughputRatesKBArr", intervalThroughputRatesKB.toArray());
+        throughputMap.put("intervalXAxisArr", intervalXAxis.toArray());
 
         //将整个map打包
         allMap.put("msgDivDelay", delayMap);

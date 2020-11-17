@@ -41,7 +41,7 @@ BEGIN	{
 
 END	{
   for (i = 0; i < period_interval_count; i++) {
-    period_throughput_rate = period_total_throughput[i] / period_interval_count;
+    period_throughput_rate = period_total_throughput[i] / period_interval;
     printf("interval%d %d %f\n", i, period_total_throughput[i], period_throughput_rate);
   }
   # 最后一行打印总吞吐率和总时间
