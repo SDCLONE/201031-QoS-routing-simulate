@@ -1,5 +1,7 @@
 package com.bupt.qos.msgdivision.service;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -44,7 +46,85 @@ public class MessageDivisionWithParamService {
         return nodesNumList;
     }
 
-    public Map<String, Object> analyzeMsgDiv() {
+    //场景一：车辆节点数量在变化
+    public Map<String, Object> analyzeMsgDivWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
+        clearGeneratedFiles();
+        generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval);
+
+        log.info("开始分析awk生成文件");
+
+        Map<String, Object> allMap = new HashMap<>();
+
+        //分析时延
+        Map<String, Object> delayMap = new HashMap<>();     //存储时延分析所有的信息
+        List<Double> averageDelayList = new ArrayList<>();      //存储场景一的所有平均时延
+        try {
+            //遍历所有的时延awk文件
+            for (int i = 0; i < nodesNumList.size(); i++) {
+                BufferedReader br = new BufferedReader(new FileReader(AWK_DIRECTORY_PATH +VANET_ROUTING_COMPARE_DELAY_SCENE1_FILENAME + i));
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    String[] lineArr = line.split(" ");
+                    if (lineArr.length == 1) {
+                        averageDelayList.add(Double.parseDouble(lineArr[0]));
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        delayMap.put("nodesNumList", nodesNumList);
+        delayMap.put("averageDelayList", averageDelayList);
+
+
+        //分析吞吐率
+        JSONArray throughputArray = new JSONArray();
+        DecimalFormat dfl = new DecimalFormat("0.000"); //保留三位小数用
+
+        for (int i = 0; i < nodesNumList.size(); i++) {
+            JSONObject jo = new JSONObject();   //用来存储单个文件的所有结果
+            //统计总的吞吐率
+            double totalThroughputRate = 0;
+            double totalSimulationTime = 0;
+            //统计间隔的吞吐率
+            double intervalTimeOffset = 0.25;
+            double intervalTime = 0.5;
+            List<Double> intervalThroughputRates = new ArrayList<>();   //画图的纵坐标
+            List<Double> intervalThroughputRatesKB = new ArrayList<>();   //KB格式
+            List<Double> intervalXAxis = new ArrayList<>();    //画图的横坐标
+            try {
+                BufferedReader br = new BufferedReader(new FileReader(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_THROUGHPUT_SCENE1_FILENAME + i));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] lineArr = line.split(" ");
+                    if (lineArr.length == 3) {
+                        double oneRate = Double.parseDouble(lineArr[2]);
+                        intervalThroughputRates.add(oneRate);   //将一个间隔的吞吐率(B/s)加入intervalThroughputRates
+                        intervalThroughputRatesKB.add(oneRate / 1024);  //将一个间隔的吞吐率(KB/s)加入intervalThroughputRatesKB
+                        intervalXAxis.add(intervalTimeOffset);  //将当前间隔的时间坐标加入intervalXAxis
+                        intervalTimeOffset += intervalTime;
+
+                    } else if(lineArr.length == 2){
+                        totalThroughputRate = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[0])));
+                        totalSimulationTime = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[1])));
+                    }
+
+                }
+                jo.put("intervalThroughputRates", intervalThroughputRates);
+                jo.put("intervalThroughputRatesKB", intervalThroughputRatesKB);
+                jo.put("intervalXAxis", intervalXAxis);
+                jo.put("totalThroughputRate", totalThroughputRate);
+                jo.put("totalSimulationTime", totalSimulationTime);
+                throughputArray.add(jo);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        allMap.put("delayMap", delayMap);
+        allMap.put("throughputMap", throughputArray);
+
 //        generateMsgDivTraceFile();
 //        generateMsgDivAwkFiles();
 //        log.info("-----------------开始分析vanet-routing-compare-----------------------");
@@ -139,144 +219,59 @@ public class MessageDivisionWithParamService {
 //        allMap.put("msgDivThroughput", throughputMap);
 //
 //        return allMap;
-        return null;
+        return allMap;
 
     }
 
     public void clearGeneratedFiles() {
-//        String shellCommand =
-//                "rm -f " + VANET_ROUTING_COMPARE_TRACE_PATH +
-//                        " && rm -f " + VANET_ROUTING_COMPARE_DELAY_PATH +
-//                        " && rm -f " + VANET_ROUTING_COMPARE_THROUGHPUT_PATH;
-////        System.out.println(shellCommand);
-//        //调用命令行清除所有生成文件
-//        try {
-//            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
-//            Process pr = Runtime.getRuntime().exec(arg1);
-//
-//            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
-//            String line;
-//            //读取python中print的值
-//            while ((line = in.readLine()) != null) {
-//                System.out.println(line);
-//            }
-//            in.close();
-//            int r2 = pr.waitFor();
-//            System.out.println("ending" + r2);
-//            log.info("清除生成文件完毕");
-//        } catch (IOException | InterruptedException e) {
-//            e.printStackTrace();
-//        }
+        log.info("开始准备清除历史记录");
+
     }
 
-    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(Integer startNodesCount, Integer endNodesCount, Integer interval) {
+    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
         //统计需要生成几个trace文件
-        for (int i = startNodesCount; i < endNodesCount; i += interval) {
+        for (int i = startNodesNum; i < endNodesNum; i += interval) {
             nodesNumList.add(i);
         }
-        nodesNumList.add(endNodesCount);
+        nodesNumList.add(endNodesNum);
 
         File file = new File(VANET_ROUTING_COMPARE_TRACE_PATH);
         log.info(">>>>>>>>>>vanet-routing-compare.tr文件不存在，需要重新生成<<<<<<<<<<");
         try {
             //因为无法生成多个trace文件，所以
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < nodesNumList.size(); i++) {
-                String shellCommand =
-                        "cd " + NS3_PATH + " && ./waf --run \"scratch/mythird --asciiTrace=1 --nodes=" + nodesNumList.get(i) + " --totaltime=10\"" +
-                        " && cd " + AWK_DIRECTORY_PATH + " && gawk -f " + VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME + " " + VANET_ROUTING_COMPARE_TRACE_PATH + " > " + VANET_ROUTING_COMPARE_DELAY_SCENE1_FILENAME + i;
-                System.out.println(shellCommand);
-//                String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
-//                Process pr = Runtime.getRuntime().exec(arg1);
-//                BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
-//                String line;
-//                //读取python中print的值
-//                while ((line = in.readLine()) != null) {
-//                    System.out.println(line);
-//                }
-//                in.close();
-//                int r2 = pr.waitFor();
-//                System.out.println("ending" + r2);
+                sb.append("cd " + NS3_PATH + " && ./waf --run \"scratch/mythird --asciiTrace=1 --nodes=").append(nodesNumList.get(i)).append(" --totaltime=10\"")
+                        .append(" && cd " + AWK_DIRECTORY_PATH + " && gawk -f " + VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME + " " + VANET_ROUTING_COMPARE_TRACE_PATH + " > " + VANET_ROUTING_COMPARE_DELAY_SCENE1_FILENAME).append(i)
+                        .append(" && cd " + AWK_DIRECTORY_PATH + " && gawk -f " + VANET_ROUTING_COMPARE_THROUGHPUT_AWK_FILENAME + " " + VANET_ROUTING_COMPARE_TRACE_PATH + " > " + VANET_ROUTING_COMPARE_THROUGHPUT_SCENE1_FILENAME).append(i);
+                if (i < nodesNumList.size() - 1) {
+                    sb.append(" && ");
+                }
             }
+            String shellCommand = sb.toString();
+            System.out.println(sb.toString());
+            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
+            Process pr = Runtime.getRuntime().exec(arg1);
+            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
+            String line;
+            //读取python中print的值
+            while ((line = in.readLine()) != null) {
+                System.out.println(line);
+            }
+            in.close();
+            int r2 = pr.waitFor();
+            System.out.println("ending" + r2);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-//        File file = new File(VANET_ROUTING_COMPARE_TRACE_PATH);
-//        //如果不存在文件，就生成
-//        if (!file.exists()) {
-//            log.info(">>>>>>>>>>vanet-routing-compare.tr文件不存在，需要重新生成<<<<<<<<<<");
-//            try {
-//                String shellCommand = "cd " + NS3_PATH + " && ./waf --run \"scratch/mythird --asciiTrace=1\"";
-//
-//                String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand};
-//                Process pr = Runtime.getRuntime().exec(arg1);
-//                BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
-//                String line;
-//                //读取python中print的值
-//                while ((line = in.readLine()) != null) {
-//                    System.out.println(line);
-//                }
-//                in.close();
-//                int r2 = pr.waitFor();
-//                System.out.println("ending" + r2);
-//            } catch (IOException | InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        } else {
-//            log.info(">>>>>>>>>>vanet-routing-compare.tr文件已经存在<<<<<<<<<<");
-//        }
     }
 
-    public void generateMsgDivAwkFiles() {
-//        File vanetRoutingCompareDelayFile = new File(VANET_ROUTING_COMPARE_DELAY_PATH);
-//        File vanetRoutingCompareThroughputFile = new File(VANET_ROUTING_COMPARE_THROUGHPUT_PATH);
-//        List<String[]> awkPathList = new ArrayList<>();
-//        //不存在就加入list
-//        if (!vanetRoutingCompareDelayFile.exists()) {
-//            awkPathList.add(new String[]{VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME, VANET_ROUTING_COMPARE_DELAY_FILENAME});
-//        }
-//        if (!vanetRoutingCompareThroughputFile.exists()) {
-//            awkPathList.add(new String[]{VANET_ROUTING_COMPARE_THROUGHPUT_AWK_FILENAME, VANET_ROUTING_COMPARE_THROUGHPUT_FILENAME});
-//        }
-//        //根据list生成linux指令
-//        StringBuilder shellCommand = new StringBuilder();
-//
-//        if (awkPathList.size() == 0) {  //如果没有命令直接结束
-//            log.info(">>>>>>>>>>vanet-routing-compare: delay和throughput都存在<<<<<<<<<<");
-//            return;
-//        } else {    //如果有就生成命令
-//            log.info(">>>>>>>>>>vanet-routing-compare: delay和throughput有不存在的<<<<<<<<<<");
-//            shellCommand.append("cd ").append(AWK_DIRECTORY_PATH);
-//            for (String[] strings : awkPathList) {
-//                shellCommand.append(" && gawk -f ").append(strings[0]).append(" ").append(VANET_ROUTING_COMPARE_TRACE_PATH).append(" > ").append(strings[1]);
-//            }
-//        }
-//        System.out.println(shellCommand.toString());
-//
-//        //调用命令行生成awk分析文件
-//        try {
-//            String[] arg1 = new String[]{"/bin/sh", "-c", shellCommand.toString()};
-//            Process pr = Runtime.getRuntime().exec(arg1);
-//
-//            BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream(), "gbk"));
-//            String line;
-//            //读取python中print的值
-//            while ((line = in.readLine()) != null) {
-//                System.out.println(line);
-//            }
-//            in.close();
-//            int r2 = pr.waitFor();
-//            System.out.println("ending" + r2);
-//            log.info("生成awk分析文件完毕");
-//        } catch (IOException | InterruptedException e) {
-//            e.printStackTrace();
-//        }
-    }
 
-    public static void main(String[] args) {
-        MessageDivisionWithParamService m = new MessageDivisionWithParamService();
-        m.generateMsgDivTraceFileAndAWKFilesWithMultiNodes(40, 80, 60);
-        System.out.println(m.getNodesNumList());
-    }
+//    public static void main(String[] args) {
+//        MessageDivisionWithParamService m = new MessageDivisionWithParamService();
+//        m.generateMsgDivTraceFileAndAWKFilesWithMultiNodes(40, 80, 20);
+//        System.out.println(m.getNodesNumList());
+//    }
 
 }

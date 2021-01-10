@@ -1,5 +1,8 @@
 package com.bupt.qos.msgdivision;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.bupt.qos.msgdivision.service.MessageDivisionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,5 +104,50 @@ public class MessageDivisionTests {
         System.out.println(Arrays.toString(intervalThroughputRates.toArray()));
         System.out.println(Arrays.toString(intervalThroughputRatesKB.toArray()));
         System.out.println(Arrays.toString(intervalXAxis.toArray()));
+    }
+
+    @Test
+    void analyzeMsgDivWithMultiNodesTests() {
+//分析时延
+        List<Double> averageDelayList = new ArrayList<>();
+        try {
+            //遍历所有的时延awk文件
+            for (int i = 0; i < 3; i++) {
+                //D:\Study\ProgrammingProject\IDEAProject\WangGuan\201031-QoS-routing-simulate\message-division\src\test\java\com\bupt\qos\msgdivision\vanet-routing-compare-delay-scene1-0
+                BufferedReader br = new BufferedReader(new FileReader("D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision\\vanet-routing-compare-delay-scene1-" + i));
+                String line = "";
+                while ((line = br.readLine()) != null) {
+                    String[] lineArr = line.split(" ");
+                    if (lineArr.length == 1) {
+                        averageDelayList.add(Double.parseDouble(lineArr[0]));
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println(averageDelayList);
+    }
+
+    @Test
+    void fastJsonTests() {
+//        List<Integer> list = new ArrayList<>();
+//        list.add(1);
+//        list.add(2);
+//        list.add(3);
+//        System.out.println(JSON.toJSONString(list));
+//        System.out.println(JSON.toJSONString(list.toArray()));
+        JSONArray jsonArray = new JSONArray();
+        for (int i = 0; i < 4; i++) {
+            JSONObject jo = new JSONObject();
+            jo.put("hello", i);
+            jo.put("world", i + 1);
+            float[] floats = {1.2f, 2.3f, 4f};
+            jo.put("floats", floats);
+            jsonArray.add(jo);
+        }
+
+        System.out.println(JSON.toJSONString(jsonArray));
     }
 }
