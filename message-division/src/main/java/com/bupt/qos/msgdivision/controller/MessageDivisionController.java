@@ -13,7 +13,6 @@ import java.util.Map;
 @RequestMapping("/msgDiv")
 @CrossOrigin
 public class MessageDivisionController {
-
     @Autowired
     private MessageDivisionService messageDivisionService;
 
@@ -21,13 +20,11 @@ public class MessageDivisionController {
     public String helloTest() {
         return "hello test";
     }
-
     //测试调用命令行在windows生成一个文件夹
     @GetMapping("/mkdirTest")
     public void mkdirTest() {
         messageDivisionService.mkdirTest();
     }
-
     //测试调用命令行在linux生成一个文件夹
     @GetMapping("/mkdirTestLinux")
     public void mkdirTestLinux() {

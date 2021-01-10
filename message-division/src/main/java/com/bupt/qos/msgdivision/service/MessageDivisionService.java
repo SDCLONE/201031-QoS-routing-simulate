@@ -146,6 +146,7 @@ public class MessageDivisionService {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            
         }
         //将delay信息加入map
         delayMap.put("averageDelay", averageDelay);
