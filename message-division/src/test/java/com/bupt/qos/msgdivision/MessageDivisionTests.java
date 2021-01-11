@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -91,7 +92,7 @@ public class MessageDivisionTests {
                     intervalXAxis.add(intervalTimeOffset);  //将当前间隔的时间坐标加入intervalXAxis
                     intervalTimeOffset += intervalTime;
 
-                } else if(lineArr.length == 2){
+                } else if (lineArr.length == 2) {
                     totalThroughputRate = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[0])));
                     totalSimulationTime = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[1])));
                 }
@@ -149,5 +150,26 @@ public class MessageDivisionTests {
         }
 
         System.out.println(JSON.toJSONString(jsonArray));
+    }
+
+    @Test
+    void deleteFileTests() {
+        //进入文件夹
+        File file = new File("D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision");
+
+        List<String> needDeleteFileNames = new ArrayList<>();
+        String[] fileNameArr = file.list();
+        System.out.println(Arrays.toString(fileNameArr));
+        assert fileNameArr != null;
+        for (String fileName : fileNameArr) {
+            if (fileName.matches(".*(scene1).*")) {
+                needDeleteFileNames.add(fileName);
+            }
+//            System.out.println(fileName.indexOf("scene1"));
+        }
+
+        StringBuilder sb = new StringBuilder();
+//        sb.append("cd ").append()
+        System.out.println(needDeleteFileNames);
     }
 }

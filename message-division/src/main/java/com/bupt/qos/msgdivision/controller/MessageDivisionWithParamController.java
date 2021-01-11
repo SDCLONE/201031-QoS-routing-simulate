@@ -3,10 +3,7 @@ package com.bupt.qos.msgdivision.controller;
 import com.bupt.qos.msgdivision.service.MessageDivisionService;
 import com.bupt.qos.msgdivision.service.MessageDivisionWithParamService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -17,13 +14,33 @@ public class MessageDivisionWithParamController {
     @Autowired
     private MessageDivisionWithParamService messageDivisionWithParamService;
 
-    @RequestMapping("/generateMsgDivTraceFileAndAWKFilesWithMultiNodes")
-    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
+    @GetMapping("/generateMsgDivTraceFileAndAWKFilesWithMultiNodes")
+    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(
+            @RequestParam Integer startNodesNum, @RequestParam Integer endNodesNum, @RequestParam Integer interval) {
         messageDivisionWithParamService.generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval);
     }
 
-    @RequestMapping("/analyzeMsgDivWithMultiNodes")
-    public Map<String, Object> analyzeMsgDivWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
+    @GetMapping("/analyzeMsgDivWithMultiNodes")
+    public Map<String, Object> analyzeMsgDivWithMultiNodes(
+            @RequestParam Integer startNodesNum, @RequestParam Integer endNodesNum, @RequestParam Integer interval) {
         return messageDivisionWithParamService.analyzeMsgDivWithMultiNodes(startNodesNum, endNodesNum, interval);
     }
+
+    @GetMapping("/analyzeMsgDivWithTime")
+    public Map<String, Object> analyzeMsgDivWithTime(
+            @RequestParam Integer nodesNum, @RequestParam Integer simulationTime) {
+        return messageDivisionWithParamService.analyzeMsgDivWithTime(nodesNum, simulationTime);
+    }
+
+    @GetMapping("/generateMsgDivTraceFileAndAWKFilesWithTime")
+    public void generateMsgDivTraceFileAndAWKFilesWithTime(
+            @RequestParam Integer nodesNum, @RequestParam Integer simulationTime) {
+        messageDivisionWithParamService.generateMsgDivTraceFileAndAWKFilesWithTime(nodesNum, simulationTime);
+    }
+
+    @GetMapping("/clearGeneratedFiles")
+    public void clearGeneratedFiles(@RequestParam String deleteMode) {
+        messageDivisionWithParamService.clearGeneratedFiles(deleteMode);
+    }
+
 }
