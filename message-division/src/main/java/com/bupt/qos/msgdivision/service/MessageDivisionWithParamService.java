@@ -166,33 +166,35 @@ public class MessageDivisionWithParamService {
             //统计总的吞吐率
             double totalThroughputRate = 0;
             double totalSimulationTime = 0;
-            //统计间隔的吞吐率
-            double intervalTimeOffset = 0.25;
-            double intervalTime = 0.5;
-            List<Double> intervalThroughputRates = new ArrayList<>();   //画图的纵坐标
-            List<Double> intervalThroughputRatesKB = new ArrayList<>();   //KB格式
-            List<Double> intervalXAxis = new ArrayList<>();    //画图的横坐标
+//            //统计间隔的吞吐率
+//            double intervalTimeOffset = 0.25;
+//            double intervalTime = 0.5;
+//            List<Double> intervalThroughputRates = new ArrayList<>();   //画图的纵坐标
+//            List<Double> intervalThroughputRatesKB = new ArrayList<>();   //KB格式
+//            List<Double> intervalXAxis = new ArrayList<>();    //画图的横坐标
             try {
                 BufferedReader br = new BufferedReader(new FileReader(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_THROUGHPUT_SCENE1_FILENAME + i));
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] lineArr = line.split(" ");
-                    if (lineArr.length == 3) {
-                        double oneRate = Double.parseDouble(lineArr[2]);
-                        intervalThroughputRates.add(oneRate);   //将一个间隔的吞吐率(B/s)加入intervalThroughputRates
-                        intervalThroughputRatesKB.add(oneRate / 1024);  //将一个间隔的吞吐率(KB/s)加入intervalThroughputRatesKB
-                        intervalXAxis.add(intervalTimeOffset);  //将当前间隔的时间坐标加入intervalXAxis
-                        intervalTimeOffset += intervalTime;
-
-                    } else if (lineArr.length == 2) {
+//                    if (lineArr.length == 3) {
+//                        double oneRate = Double.parseDouble(lineArr[2]);
+//                        intervalThroughputRates.add(oneRate);   //将一个间隔的吞吐率(B/s)加入intervalThroughputRates
+//                        intervalThroughputRatesKB.add(oneRate / 1024);  //将一个间隔的吞吐率(KB/s)加入intervalThroughput
+//                        // RatesKB
+//                        intervalXAxis.add(intervalTimeOffset);  //将当前间隔的时间坐标加入intervalXAxis
+//                        intervalTimeOffset += intervalTime;
+//
+//                    }
+                    if (lineArr.length == 2) {
                         totalThroughputRate = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[0])));
                         totalSimulationTime = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[1])));
                     }
 
                 }
-                jo.put("intervalThroughputRates", intervalThroughputRates);
-                jo.put("intervalThroughputRatesKB", intervalThroughputRatesKB);
-                jo.put("intervalXAxis", intervalXAxis);
+//                jo.put("intervalThroughputRates", intervalThroughputRates);
+//                jo.put("intervalThroughputRatesKB", intervalThroughputRatesKB);
+//                jo.put("intervalXAxis", intervalXAxis);
                 jo.put("totalThroughputRate", totalThroughputRate);
                 jo.put("totalSimulationTime", totalSimulationTime);
                 throughputArray.add(jo);
