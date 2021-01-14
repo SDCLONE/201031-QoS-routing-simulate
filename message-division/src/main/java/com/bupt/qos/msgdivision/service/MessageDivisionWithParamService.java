@@ -37,14 +37,13 @@ public class MessageDivisionWithParamService {
 
     //用于记录随车辆节点数变化需要生成几个awk分析文件
     //注意：tr文件只能生成一个
-    private final List<Integer> nodesNumList = new ArrayList<>();     //存储多个trace文件的参数信息
+    private List<Integer> nodesNumList;     //存储多个trace文件的参数信息
 
     public List<Integer> getNodesNumList() {
         return nodesNumList;
     }
 
     /**
-     *
      * @param deleteMode "scene1", "scene2" or "all"
      */
     public void clearGeneratedFiles(String deleteMode) {
@@ -128,9 +127,11 @@ public class MessageDivisionWithParamService {
     }
 
     //场景一：车辆节点数量在变化
-    public Map<String, Object> analyzeMsgDivWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
+    public synchronized Map<String, Object> analyzeMsgDivWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval, Integer simulationTime) {
+        //初始化nodesNumList
+        nodesNumList = new ArrayList<>();
         clearGeneratedFiles("scene1");
-        generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval);
+        generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval, simulationTime);
 
         log.info("开始分析awk生成文件");
         Map<String, Object> allMap = new HashMap<>();
@@ -158,11 +159,12 @@ public class MessageDivisionWithParamService {
         delayMap.put("averageDelayList", averageDelayList);
 
         //分析吞吐率
-        JSONArray throughputArray = new JSONArray();
+        Map<String, Object> throughputMap = new HashMap<>();
+//        JSONArray throughputArray = new JSONArray();
         DecimalFormat dfl = new DecimalFormat("0.000"); //保留三位小数用
-
+        List<Double> averageThroughputRateList = new ArrayList<>();
         for (int i = 0; i < nodesNumList.size(); i++) {
-            JSONObject jo = new JSONObject();   //用来存储单个文件的所有结果
+//            JSONObject jo = new JSONObject();   //用来存储单个文件的所有结果
             //统计总的吞吐率
             double totalThroughputRate = 0;
             double totalSimulationTime = 0;
@@ -189,28 +191,32 @@ public class MessageDivisionWithParamService {
                     if (lineArr.length == 2) {
                         totalThroughputRate = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[0])));
                         totalSimulationTime = Double.parseDouble(dfl.format(Double.parseDouble(lineArr[1])));
+                        averageThroughputRateList.add(totalThroughputRate);
                     }
 
                 }
 //                jo.put("intervalThroughputRates", intervalThroughputRates);
 //                jo.put("intervalThroughputRatesKB", intervalThroughputRatesKB);
 //                jo.put("intervalXAxis", intervalXAxis);
-                jo.put("totalThroughputRate", totalThroughputRate);
-                jo.put("totalSimulationTime", totalSimulationTime);
-                throughputArray.add(jo);
+//                jo.put("totalThroughputRate", totalThroughputRate);
+//                jo.put("totalSimulationTime", totalSimulationTime);
+//                throughputArray.add(jo);
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+        throughputMap.put("averageThroughputRateList", averageThroughputRateList);
+        throughputMap.put("nodesNumList", nodesNumList);
 
-        allMap.put("nodesNumList", nodesNumList);
+
         allMap.put("msgDivDelay", delayMap);
-        allMap.put("msgDivThroughput", throughputArray);
+        allMap.put("msgDivThroughput", throughputMap);
         return allMap;
 
     }
 
-    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval) {
+    public void generateMsgDivTraceFileAndAWKFilesWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval, Integer simulationTime) {
         //统计需要生成几个trace文件
         for (int i = startNodesNum; i < endNodesNum; i += interval) {
             nodesNumList.add(i);
@@ -223,7 +229,7 @@ public class MessageDivisionWithParamService {
             //因为无法生成多个trace文件，所以
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < nodesNumList.size(); i++) {
-                sb.append("cd " + NS3_PATH + " && ./waf --run \"scratch/mythird --asciiTrace=1 --nodes=").append(nodesNumList.get(i)).append(" --totaltime=10\"")
+                sb.append("cd " + NS3_PATH + " && ./waf --run \"scratch/mythird --asciiTrace=1 --nodes=").append(nodesNumList.get(i)).append(" --totaltime=").append(simulationTime).append("\"")
                         .append(" && cd " + AWK_DIRECTORY_PATH + " && gawk -f " + VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME + " " + VANET_ROUTING_COMPARE_TRACE_PATH + " > " + VANET_ROUTING_COMPARE_DELAY_SCENE1_FILENAME).append(i)
                         .append(" && cd " + AWK_DIRECTORY_PATH + " && gawk -f " + VANET_ROUTING_COMPARE_THROUGHPUT_AWK_FILENAME + " " + VANET_ROUTING_COMPARE_TRACE_PATH + " > " + VANET_ROUTING_COMPARE_THROUGHPUT_SCENE1_FILENAME).append(i);
                 if (i < nodesNumList.size() - 1) {
@@ -250,7 +256,8 @@ public class MessageDivisionWithParamService {
     }
 
     //场景二：时间在变化
-    public Map<String, Object> analyzeMsgDivWithTime(Integer nodesNum, Integer simulationTime) {
+    public synchronized Map<String, Object> analyzeMsgDivWithTime(Integer nodesNum, Integer simulationTime) {
+        nodesNumList = new ArrayList<>();
         clearGeneratedFiles("scene2");
         generateMsgDivTraceFileAndAWKFilesWithTime(nodesNum, simulationTime);
 
@@ -369,14 +376,20 @@ public class MessageDivisionWithParamService {
     }
 
     public static void main(String[] args) {
-        MessageDivisionWithParamService m = new MessageDivisionWithParamService();
-//        m.generateMsgDivTraceFileAndAWKFilesWithMultiNodes(40, 80, 20);
-//        System.out.println(m.getNodesNumList());
-//        m.generateMsgDivTraceFileAndAWKFilesWithTime(40, 5);
-        m.clearGeneratedFiles("scene1");
-        m.clearGeneratedFiles("scene2");
-        m.clearGeneratedFiles("all");
-        m.clearGeneratedFiles("hello");
+//        MessageDivisionWithParamService m = new MessageDivisionWithParamService();
+////        m.generateMsgDivTraceFileAndAWKFilesWithMultiNodes(40, 80, 20);
+////        System.out.println(m.getNodesNumList());
+////        m.generateMsgDivTraceFileAndAWKFilesWithTime(40, 5);
+//        m.clearGeneratedFiles("scene1");
+//        m.clearGeneratedFiles("scene2");
+//        m.clearGeneratedFiles("all");
+//        m.clearGeneratedFiles("hello");
+        List<Integer> list = new ArrayList<>();
+        list.add(1);
+        list.add(3);
+        System.out.println(list);
+        list.clear();
+        System.out.println(list);
     }
 
 }
