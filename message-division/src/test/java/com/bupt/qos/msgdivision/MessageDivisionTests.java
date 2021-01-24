@@ -8,9 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -171,5 +169,38 @@ public class MessageDivisionTests {
         StringBuilder sb = new StringBuilder();
 //        sb.append("cd ").append()
         System.out.println(needDeleteFileNames);
+    }
+
+    @Test
+    void readHistoryFileTests() {
+        //vanet-routing-compare-history-multinodes  起始节点数，终止节点数，间隔点数，仿真时间
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision\\vanet-routing-compare-history-multinodes"));
+            String line;
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+                String[] lineSplit = line.split(",");
+                Integer historyStartNodesNum = Integer.parseInt(lineSplit[0]);
+                Integer historyEndNodesNum = Integer.parseInt(lineSplit[1]);
+                Integer historyInterval = Integer.parseInt(lineSplit[2]);
+                Integer historySimulationTime = Integer.parseInt(lineSplit[3]);
+                System.out.println(historyStartNodesNum);
+                System.out.println(historyEndNodesNum);
+                System.out.println(historyInterval);
+                System.out.println(historySimulationTime);
+            }
+            br.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter("D:\\Study\\ProgrammingProject\\IDEAProject\\WangGuan\\201031-QoS-routing-simulate\\message-division\\src\\test\\java\\com\\bupt\\qos\\msgdivision\\vanet-routing-compare-history-multinodes"));
+            bw.write("40,80,10,10");
+            bw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }

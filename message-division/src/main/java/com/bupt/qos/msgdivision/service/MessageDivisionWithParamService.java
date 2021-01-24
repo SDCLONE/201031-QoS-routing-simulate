@@ -1,7 +1,5 @@
 package com.bupt.qos.msgdivision.service;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +24,11 @@ public class MessageDivisionWithParamService {
     //场景一生成的
     private final String VANET_ROUTING_COMPARE_DELAY_SCENE1_FILENAME = "vanet-routing-compare-delay-scene1-";
     private final String VANET_ROUTING_COMPARE_THROUGHPUT_SCENE1_FILENAME = "vanet-routing-compare-throughput-scene1-";
+    private final String VANET_ROUTING_COMPARE_HISTORY_SCENE1_FILENAME = "vanet-routing-compare-history-multinodes";
+    //场景二生成的
     private final String VANET_ROUTING_COMPARE_DELAY_SCENE2_FILENAME = "vanet-routing-compare-delay-scene2";
     private final String VANET_ROUTING_COMPARE_THROUGHPUT_SCENE2_FILENAME = "vanet-routing-compare-throughput-scene2";
-
+    private final String VANET_ROUTING_COMPARE_HISTORY_SCENE2_FILENAME = "vanet-routing-compare-history-time";
 
     private final String VANET_ROUTING_COMPARE_DELAY_AWK_PATH = AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_DELAY_AWK_FILENAME;
     private final String VANET_ROUTING_COMPARE_THROUGHPUT_AWK_PATH = AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_THROUGHPUT_AWK_FILENAME;
@@ -130,10 +130,43 @@ public class MessageDivisionWithParamService {
     public synchronized Map<String, Object> analyzeMsgDivWithMultiNodes(Integer startNodesNum, Integer endNodesNum, Integer interval, Integer simulationTime) {
         //初始化nodesNumList
         nodesNumList = new ArrayList<>();
-        clearGeneratedFiles("scene1");
-        generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval, simulationTime);
 
-        log.info("开始分析awk生成文件");
+        //先判断有无历史生成记录
+        File historyScene1File = new File(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_HISTORY_SCENE1_FILENAME);
+        boolean usingHistoryFlag = true;
+        if (!historyScene1File.exists()) {
+            throw new RuntimeException("缺少场景一或场景二历史记录文件");
+        }
+        BufferedReader brScene1;
+        try {
+            brScene1 = new BufferedReader(new FileReader(historyScene1File));
+            String historyLine;
+            while ((historyLine = brScene1.readLine()) != null) {
+                String paramLine = startNodesNum + "," + endNodesNum + "," + interval + "," + simulationTime;
+                //如果历史记录和本次参数不相同，则重新生成tr和awk文件
+                if (!historyLine.equals(paramLine)) {
+                    log.info("本次参数和历史记录不同，开始生成tr和awk文件");
+                    clearGeneratedFiles("scene1");
+                    generateMsgDivTraceFileAndAWKFilesWithMultiNodes(startNodesNum, endNodesNum, interval, simulationTime);
+                    usingHistoryFlag = false;
+                }
+                //如果有历史记录，则直接执行分析代码
+                else {
+                    log.info("本次参数和历史记录相同，无需重新生成tr和awk文件");
+                    for (int i = startNodesNum; i < endNodesNum; i += interval) {
+                        nodesNumList.add(i);
+                    }
+                    nodesNumList.add(endNodesNum);
+                }
+            }
+            brScene1.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        //开始分析awk生成的所有文件
+        log.info(">>>>>>>>>开始分析awk生成文件<<<<<<<<<<");
         Map<String, Object> allMap = new HashMap<>();
 
         //分析时延
@@ -150,6 +183,7 @@ public class MessageDivisionWithParamService {
                         averageDelayList.add(Double.parseDouble(lineArr[0]));
                     }
                 }
+                br.close();
 
             }
         } catch (Exception e) {
@@ -212,6 +246,20 @@ public class MessageDivisionWithParamService {
 
         allMap.put("msgDivDelay", delayMap);
         allMap.put("msgDivThroughput", throughputMap);
+        allMap.put("usingHistoryFlag", usingHistoryFlag);
+
+        //最后把本次的记录存进历史记录文件中
+        if (!usingHistoryFlag) {
+            try {
+                BufferedWriter bw = new BufferedWriter(new FileWriter(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_HISTORY_SCENE1_FILENAME));
+                bw.write(startNodesNum + "," + endNodesNum + "," + interval + "," + simulationTime);
+                bw.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
         return allMap;
 
     }
@@ -258,9 +306,38 @@ public class MessageDivisionWithParamService {
     //场景二：时间在变化
     public synchronized Map<String, Object> analyzeMsgDivWithTime(Integer nodesNum, Integer simulationTime) {
         nodesNumList = new ArrayList<>();
-        clearGeneratedFiles("scene2");
-        generateMsgDivTraceFileAndAWKFilesWithTime(nodesNum, simulationTime);
 
+        //先判断有无历史生成记录
+        File historyScene2File = new File(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_HISTORY_SCENE2_FILENAME);
+        boolean usingHistoryFlag = true;
+        if (!historyScene2File.exists()) {
+            throw new RuntimeException("缺少场景一或场景二历史记录文件");
+        }
+        BufferedReader brScene2;
+        try {
+            brScene2 = new BufferedReader(new FileReader(historyScene2File));
+            String historyLine;
+            while ((historyLine = brScene2.readLine()) != null) {
+                String paramLine = nodesNum + "," + simulationTime;
+                //如果历史记录和本次参数不相同，则重新生成tr和awk文件
+                if (!historyLine.equals(paramLine)) {
+                    log.info("本次参数和历史记录不同，开始生成tr和awk文件");
+                    clearGeneratedFiles("scene2");
+                    generateMsgDivTraceFileAndAWKFilesWithTime(nodesNum, simulationTime);
+                    usingHistoryFlag = false;
+                }
+                //如果有历史记录，则直接执行分析代码
+                else {
+                    log.info("本次参数和历史记录相同，无需重新生成tr和awk文件");
+
+                }
+            }
+            brScene2.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        log.info("开始分析awk生成文件");
         Map<String, Object> allMap = new HashMap<>();
         Map<String, Object> delayMap = new HashMap<>();
         Map<String, Object> throughputMap = new HashMap<>();
@@ -348,6 +425,19 @@ public class MessageDivisionWithParamService {
         //将整个map打包
         allMap.put("msgDivDelay", delayMap);
         allMap.put("msgDivThroughput", throughputMap);
+        allMap.put("usingHistoryFlag", usingHistoryFlag);
+
+        //最后把本次的记录存进历史记录文件中
+        if (!usingHistoryFlag) {
+            try {
+                BufferedWriter bw = new BufferedWriter(new FileWriter(AWK_DIRECTORY_PATH + VANET_ROUTING_COMPARE_HISTORY_SCENE2_FILENAME));
+                bw.write(nodesNum + "," + simulationTime);
+                bw.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         return allMap;
     }
 

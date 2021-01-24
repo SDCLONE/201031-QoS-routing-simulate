@@ -38,9 +38,9 @@ public class MessageDivisionWithParamController {
 //        messageDivisionWithParamService.generateMsgDivTraceFileAndAWKFilesWithTime(nodesNum, simulationTime);
 //    }
 
-//    @GetMapping("/clearGeneratedFiles")
-//    public void clearGeneratedFiles(@RequestParam String deleteMode) {
-//        messageDivisionWithParamService.clearGeneratedFiles(deleteMode);
-//    }
+    @GetMapping("/clearGeneratedFiles")
+    public void clearGeneratedFiles(@RequestParam String deleteMode) {
+        messageDivisionWithParamService.clearGeneratedFiles(deleteMode);
+    }
 
 }
